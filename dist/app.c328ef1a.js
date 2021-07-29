@@ -125,34 +125,33 @@ var ajax = new XMLHttpRequest(); // const data
 var content = document.createElement('div');
 var NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json';
 var CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json';
-ajax.open('GET', NEWS_URL, false);
-ajax.send();
-var newsFeed = JSON.parse(ajax.response);
-var ul = document.createElement('ul');
-window.addEventListener('hashchange', function () {
-  console.log(location.hash);
-  var id = location.hash.substring(1);
-  ajax.open('GET', CONTENT_URL.replace('@id', id), false);
+
+function getData(url) {
+  ajax.open('GET', url, false);
   ajax.send();
-  var newsContent = JSON.parse(ajax.response);
-  var title = document.createElement('h1');
-  title.innerHTML = newsContent.title;
-  content.appendChild(title);
-  console.log(newsContent);
-});
-
-for (var i = 0; i < 10; i++) {
-  var li = document.createElement('li'); //
-
-  var a = document.createElement('a');
-  a.href = "#".concat(newsFeed[i].id);
-  a.innerHTML = "".concat(newsFeed[i].title, " (").concat(newsFeed[i].comments_count, ")");
-  li.appendChild(a);
-  ul.appendChild(li);
+  return JSON.parse(ajax.response);
 }
 
-container.appendChild(ul);
-container.appendChild(content);
+function newsFeed() {
+  var newsFeed = getData(NEWS_URL);
+  var newsList = [];
+  newsList.push('<ul>');
+
+  for (var i = 0; i < 10; i++) {
+    newsList.push("\n      <li>\n        <a href=\"#".concat(newsFeed[i].id, "\">\n          ").concat(newsFeed[i].title, " (").concat(newsFeed[i].comments_count, ")\n        </a>\n      </li>\n      "));
+  }
+
+  newsList.push('</ul>');
+  container.innerHTML = newsList.join('');
+}
+
+function newsDetail() {
+  var id = location.hash.substring(1);
+  var newsContent = getData(CONTENT_URL.replace('@id', id));
+  container.innerHTML = "\n    <h1>".concat(newsContent.title, "</h1>\n    <div>\n      <a href=\"#\">list</a>\n    </div>\n  ");
+}
+
+window.addEventListener('hashchange', newsDetail);
 },{}],"../../../../../../usr/local/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
