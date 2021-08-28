@@ -22,6 +22,9 @@ function makeFeeds(feeds) {
   return feeds;
 }
 
+/**
+ * ニュースリストを取得
+ */
 function newsFeed() {
   const newsFeed = store.feeds;
   const newsList = [];
@@ -52,7 +55,7 @@ function newsFeed() {
 
   if (newsFeed.length === 0) {
     store.feeds = makeFeeds(getData(NEWS_URL));
-    newsFeed = store.feeds;
+    this.newsFeed = store.feeds;
   }
 
   for(let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; i++) {
@@ -84,6 +87,9 @@ function newsFeed() {
   container.innerHTML = template;
 }
 
+/**
+ * ニュース詳細
+ */
 function newsDetail() {
   const id = location.hash.substr(7);
   const newsContent = getData(CONTENT_URL.replace('@id', id))
@@ -123,29 +129,29 @@ function newsDetail() {
     }
   }
 
-  function makeComment(comments, called = 0) {
-    const commentString = [];
+  container.innerHTML = template.replace('{{__comments__}}', makeComment(newsContent.comments));
+}
 
-    for(let i = 0; i < comments.length; i++) {
-      commentString.push(`
-        <div style="padding-left: ${called * 40}px;" class="mt-4">
-          <div class="text-gray-400">
-            <i class="fa fa-sort-up mr-2"></i>
-            <strong>${comments[i].user}</strong> ${comments[i].time_ago}
-          </div>
-          <p class="text-gray-700">${comments[i].content}</p>
-        </div>      
-      `);
+function makeComment(comments, called = 0) {
+  const commentString = [];
 
-      if (comments[i].comments.length > 0) {
-        commentString.push(makeComment(comments[i].comments, called + 1));
-      }
+  for(let i = 0; i < comments.length; i++) {
+    commentString.push(`
+      <div style="padding-left: ${called * 40}px;" class="mt-4">
+        <div class="text-gray-400">
+          <i class="fa fa-sort-up mr-2"></i>
+          <strong>${comments[i].user}</strong> ${comments[i].time_ago}
+        </div>
+        <p class="text-gray-700">${comments[i].content}</p>
+      </div>      
+    `);
+
+    if (comments[i].comments.length > 0) {
+      commentString.push(makeComment(comments[i].comments, called + 1));
     }
-
-    return commentString.join('');
   }
 
-  container.innerHTML = template.replace('{{__comments__}}', makeComment(newsContent.comments));
+  return commentString.join('');
 }
 
 function router() {
