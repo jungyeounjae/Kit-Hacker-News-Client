@@ -1,0 +1,21 @@
+/**
+　typescriptはtranse filerなのでbrowserで動かすには
+　javascriptに変換する必要がある。
+　変換する中でいろんなoptionを付ける事ができる。(complie)
+
+　https://www.typescriptlang.org/tsconfig
+*/
+{
+    "compilerOptions": {
+      "strict": true,　// typescript → javascriptに変更するにあったって、厳しく見るのか？
+      "target": "ES5",
+      "module": "CommonJS",
+      "alwaysStrict": true,
+      "noImplicitAny": true,
+      "noImplicitThis": true,
+      "sourceMap": true, //　コードはtypescriptにて組んでbrowserにはjavascriptとして動いているので、もし問題が発生した際にcompileしたjavascriptfileで問題点を解決するにはむずいので
+      　　　　　　　　　　　 //　typescriptで問題解決できるように、内部のjavascriptと組んだtypescript間の連携情報を持っているファイル。
+      "downlevelIteration": true
+    } 
+  }
+  
