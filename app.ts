@@ -4,7 +4,7 @@
  }
 
  type News = {
-  id: number;
+  id: number; // 값을 수정 할 수 없다
   url: string;
   user: string;
   time_ago: string;
@@ -12,8 +12,8 @@
   content: string;
 }
 
- type NewsFeed = News & { // {TYPE} + & : News 를 합침
-   comments_count: number;
+interface NewsFeed  extends News { // {TYPE} + & : News 를 합침(결합 interactions)
+   readonly comments_count: number;
    points: number;
    read?: boolean; // null optional
  }
@@ -22,7 +22,7 @@
    comments: [];
  }
 
- type NewsComment = News & {
+ interface NewsComment extends News {
    comments: NewsComment[];
    level: number;
  }
