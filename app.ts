@@ -35,6 +35,12 @@ const store: Store = {
   feeds: [],
 };
 
+/**
+ * targetClassがbaseClassesクラウをextendsする。(Minin)
+ * 多重extendsが不可能なため、このようなMinin記法を利用して多重extednsが実装できる
+ * @param targetClass 
+ * @param baseClasses 
+ */
 function applyApiMixins(targetClass: any, baseClasses: any[]): void {
   baseClasses.forEach(baseClass => {
     Object.getOwnPropertyNames(baseClass.prototype).forEach(name => {
