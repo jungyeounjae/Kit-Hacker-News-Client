@@ -1,75 +1,81 @@
- type Store = {
-   currentPage: number;
-   feeds: NewsFeed[]; // NewsFeed - array type
- }
-
- type News = {
-  id: number; // 값을 수정 할 수 없다
-  url: string;
-  user: string;
-  time_ago: string;
-  title: string;
-  content: string;
+interface Store {
+  feeds: NewsFeed[];
+  currentPage: number;
 }
 
-interface NewsFeed  extends News { // {TYPE} + & : News 를 합침(결합 interactions)
-   readonly comments_count: number;
-   points: number;
-   read?: boolean; // null optional
- }
+interface News {
+  readonly id: number;
+  readonly time_ago: string;
+  readonly title: string;
+  readonly url: string;
+  readonly user: string;
+  readonly content: string;
+}
 
- type NewsDetail = News & {
-   comments: [];
- }
+interface NewsFeed extends News {
+  readonly points: number;
+  readonly comments_count: number;
+  read?: boolean;
+}
 
- interface NewsComment extends News {
-   comments: NewsComment[];
-   level: number;
- }
+interface NewsDetail extends News {
+  readonly comments: NewsComment[];
+}
 
-const container: HTMLElement | null = document.getElementById('root');
-const ajax: XMLHttpRequest = new XMLHttpRequest();
+interface NewsComment extends News {
+  readonly comments: NewsComment[];
+  readonly level: number;
+}
+
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json';
 const CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json';
+const container: HTMLElement | null = document.getElementById('root');
 const store: Store = {
   currentPage: 1,
   feeds: [],
 };
 
+function applyApiMixins(targetClass: any, baseClasses: any[]): void {
+  baseClasses.forEach(baseClass => {
+    Object.getOwnPropertyNames(baseClass.prototype).forEach(name => {
+      const descriptor = Object.getOwnPropertyDescriptor(baseClass.prototype, name);
+      
+      if (descriptor) {
+        Object.defineProperty(targetClass.prototype, name, descriptor);
+      }            
+    });
+  });
+}
+
 class Api {
-  url: string;
-  ajax: XMLHttpRequest;
+  getRequest<AjaxResponse>(url: string): AjaxResponse {
+    const ajax = new XMLHttpRequest();
+    ajax.open('GET', url, false);
+    ajax.send();
 
-  constructor(url: string) {
-    this.url = url;
-    this.ajax = new XMLHttpRequest();
-  }
-
-  protected getRequest<AjaxResponse>(): AjaxResponse {
-    this.ajax.open('GET', this.url, false);
-    this.ajax.send();
-
-    return JSON.parse(ajax.response);
+    return JSON.parse(ajax.response) as AjaxResponse;
   }
 }
 
-class NewsFeedApi extends Api {
-  // constructor(url:string, url1:string) {
-  //   super('super constructor call');
-  // }
-
-  getData(): NewsFeed[] {
-   return this.getRequest<NewsFeed[]>();
+class NewsFeedApi {
+  getData(url:string): NewsFeed[] {
+    return this.getRequest<NewsFeed[]>(url);
   }
 }
 
-class NewsDetailApi extends Api {
-  getData(): NewsDetail {
-    return this.getRequest<NewsDetail>();
+class NewsDetailApi {
+  getData(url:string): NewsDetail {
+    return this.getRequest<NewsDetail>(url);
   }
 }
 
-function makeFeeds(feeds: NewsFeed[]): NewsFeed[]{
+interface NewsFeedApi extends Api {};
+interface NewsDetailApi extends Api {};
+
+applyApiMixins(NewsFeedApi, [Api]);
+applyApiMixins(NewsDetailApi, [Api]);
+
+function makeFeeds(feeds: NewsFeed[]):  NewsFeed[] {
   for (let i = 0; i < feeds.length; i++) {
     feeds[i].read = false;
   }
@@ -81,17 +87,15 @@ function updateView(html: string): void {
   if (container) {
     container.innerHTML = html;
   } else {
-    console.error('container is null');
-  }
+    console.error('최상위 컨테이너가 없어 UI를 진행하지 못합니다.')
+  }  
 }
-/**
- * ニュースリストを取得
- */
+
 function newsFeed(): void {
-  const api = new NewsFeedApi(NEWS_URL);
+  let api = new NewsFeedApi();
   let newsFeed: NewsFeed[] = store.feeds;
-  const newsList = [];
-  let template = `
+  const newsList: string[] = [];
+  let template: string = `
     <div class="bg-gray-600 min-h-screen">
       <div class="bg-white text-xl">
         <div class="mx-auto px-4">
@@ -117,7 +121,7 @@ function newsFeed(): void {
   `;
 
   if (newsFeed.length === 0) {
-    newsFeed = store.feeds = makeFeeds(api.getData());
+    newsFeed = store.feeds = makeFeeds(api.getData(NEWS_URL));
   }
 
   for(let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; i++) {
@@ -149,55 +153,10 @@ function newsFeed(): void {
   updateView(template);
 }
 
-/**
- * ニュース詳細
- */
-function newsDetail(): void {
-  const id = location.hash.substr(7);
-  const api = new NewsDetailApi(CONTENT_URL.replace('@id',id))
-  const newsContent = api.getData();
-  let template = `
-    <div class="bg-gray-600 min-h-screen pb-8">
-      <div class="bg-white text-xl">
-        <div class="mx-auto px-4">
-          <div class="flex justify-between items-center py-6">
-            <div class="flex justify-start">
-              <h1 class="font-extrabold">Hacker News</h1>
-            </div>
-            <div class="items-center justify-end">
-              <a href="#/page/${store.currentPage}" class="text-gray-500">
-                <i class="fa fa-times"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="h-full border rounded-xl bg-white m-6 p-4 ">
-        <h2>${newsContent.title}</h2>
-        <div class="text-gray-400 h-20">
-          ${newsContent.content}
-        </div>
-
-        {{__comments__}}
-
-      </div>
-    </div>
-  `;
-
-  for(let i=0; i < store.feeds.length; i++) {
-    if (store.feeds[i].id === Number(id)) {
-      store.feeds[i].read = true;
-      break;
-    }
-  }
-  updateView(template.replace('{{__comments__}}', makeComment(newsContent.comments)));
-}
-
 function makeComment(comments: NewsComment[]): string {
   const commentString = [];
 
-  for(let i = 0; i < comments.length;  i++) {
+  for(let i = 0; i < comments.length; i++) {
     const comment: NewsComment = comments[i];
 
     commentString.push(`
@@ -218,6 +177,49 @@ function makeComment(comments: NewsComment[]): string {
   return commentString.join('');
 }
 
+function newsDetail(): void {
+  const id = location.hash.substr(7);
+  const api = new NewsDetailApi();
+  const newsDetail: NewsDetail = api.getData(CONTENT_URL.replace('@id', id));
+  let template = `
+    <div class="bg-gray-600 min-h-screen pb-8">
+      <div class="bg-white text-xl">
+        <div class="mx-auto px-4">
+          <div class="flex justify-between items-center py-6">
+            <div class="flex justify-start">
+              <h1 class="font-extrabold">Hacker News</h1>
+            </div>
+            <div class="items-center justify-end">
+              <a href="#/page/${store.currentPage}" class="text-gray-500">
+                <i class="fa fa-times"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="h-full border rounded-xl bg-white m-6 p-4 ">
+        <h2>${newsDetail.title}</h2>
+        <div class="text-gray-400 h-20">
+          ${newsDetail.content}
+        </div>
+
+        {{__comments__}}
+
+      </div>
+    </div>
+  `;
+
+  for(let i=0; i < store.feeds.length; i++) {
+    if (store.feeds[i].id === Number(id)) {
+      store.feeds[i].read = true;
+      break;
+    }
+  }
+
+  updateView(template.replace('{{__comments__}}', makeComment(newsDetail.comments)));
+}
+
 function router(): void {
   const routePath = location.hash;
 
@@ -230,6 +232,7 @@ function router(): void {
     newsDetail()
   }
 }
+
 window.addEventListener('hashchange', router);
 
 router();
