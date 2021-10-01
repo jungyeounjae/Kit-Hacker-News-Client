@@ -1,3 +1,5 @@
+// 인터페이스는 타입 체크를 위해 사용되며 변수 함수 클래스에 사용 가능
+// 여러가지 타입을 갖는 프로퍼티로 이루어진 새로운 타입을 정의하는 것과 같다
 interface Store {
   feeds: NewsFeed[];
   currentPage: number;
@@ -25,6 +27,11 @@ interface NewsDetail extends News {
 interface NewsComment extends News {
   readonly comments: NewsComment[];
   readonly level: number;
+}
+
+interface RouteInfo {
+  path: string;
+  page: View;
 }
 
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json';
@@ -92,10 +99,11 @@ class NewsDetailApi extends Api {
 // applyApiMixins(NewsFeedApi, [Api]);
 // applyApiMixins(NewsDetailApi, [Api]);
 
-class View {
-  templete: string;
-  container: HTMLElement;
-  htmlList: string[];
+abstract class View {
+  private templete: string;
+  private renderTemplate: string;
+  private container: HTMLElement;
+  private htmlList: string[];
 
   constructor(containerId: string, templete: string) {
      const containerElement = document.getElementById(containerId);
@@ -106,27 +114,81 @@ class View {
 
     this.container = containerElement;
     this.templete = templete;
+    this.renderTemplate = templete
     this.htmlList = [];
   }
 
-  updateView(html: string): void {
-    this.container.innerHTML = html;
+  protected updateView(): void {
+    this.container.innerHTML = this.renderTemplate;
+    this.renderTemplate = this.templete; // 元のtemplateにset
   }
-  addHtml(htmlString: string): void {
+
+  protected addHtml(htmlString: string): void {
     this.htmlList.push(htmlString);
   }
-  getHtml(): string { 
-    return this.htmlList.join('');
+
+  protected getHtml(): string { 
+    const snapshot = this.htmlList.join('');
+    this.clearHtmlList();
+    return snapshot;
+  }
+
+  private clearHtmlList(): void {
+    this.htmlList = [];
   }
 
   setTemplateData(key: string, value: string): void {
-    this.templete = this.templete.replace(`{{__${key}__}}`, value);
+    this.renderTemplate = this.renderTemplate.replace(`{{__${key}__}}`, value);
+  }
+
+  // render 메서드 작성을 자식 클래스에게 강제시킨다.
+  abstract render(): void;
+}
+
+class Router {
+  routeTable: RouteInfo[];
+  defaultRoute: RouteInfo | null; // null도 가능
+
+  constructor() {
+    // route메서드는 브라우저의 이벤트 시스템이 호출하는 것이기 때문에 
+    // 호출이 되었을 때, this context는 router클래스의 this가 아니게 된다.
+    // 그렇게 되면 route의 defaultRoute변수 등 접근할 수 없게 됨
+    // 이러한 에러를 피하기 위해 bind(this)
+    window.addEventListener('hashchange', this.route.bind(this));
+
+    this.routeTable = [];
+    this.defaultRoute = null;
+  }
+
+  setDefaultPage(page: View): void {
+    this.defaultRoute = { path: '', page};
+  }
+
+  addRoutePath(path: string,page: View): void {
+    // key와 value가 같은 경우에는 생략이 가능하다
+    // push({path: path, page: page})  // 생략 전
+    this.routeTable.push({path,page})
+  }
+
+  route() {
+    const routePath = location.hash;
+
+    if (routePath === '' && this.defaultRoute) {
+      this.defaultRoute.page.render();
+    }
+
+    for (const routeInfo of this.routeTable) {
+      if (routePath.indexOf(routeInfo.path) >= 0) {
+        routeInfo.page.render();
+        break;
+      }
+    }
   }
 }
 
 class NewsFeedView extends View {
-  api: NewsFeedApi;
-  feeds: NewsFeed[];
+  private api: NewsFeedApi;
+  private feeds: NewsFeed[];
 
   constructor(containerId: string) {
     let template: string = `
@@ -167,6 +229,7 @@ class NewsFeedView extends View {
   }
  
   render(): void {
+    store.currentPage = Number(location.hash.substr(7) || 1); // null의 경우, 1
     for(let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; i++) {
       const {id, title, comments_count, user, points, time_ago, read} = this.feeds[i];
       this.addHtml(`
@@ -194,7 +257,7 @@ class NewsFeedView extends View {
     this.setTemplateData('prev_page', String(store.currentPage > 1 ? store.currentPage - 1 : 1));
     this.setTemplateData('next_page', String(store.currentPage + 1));
 
-    updateView(template);
+    this.updateView();
   }
 
   makeFeeds():  void {
@@ -215,7 +278,7 @@ class NewsDetailView extends View {
                 <h1 class="font-extrabold">Hacker News</h1>
               </div>
               <div class="items-center justify-end">
-                <a href="#/page/ ${store.currentPage}" class="text-gray-500">
+                <a href="#/page/{{__currentPage__}}" class="text-gray-500">
                   <i class="fa fa-times"></i>
                 </a>
               </div>
@@ -224,9 +287,9 @@ class NewsDetailView extends View {
         </div>
   
         <div class="h-full border rounded-xl bg-white m-6 p-4 ">
-          <h2>${newsDetail.title}</h2>
+          <h2>{{__title__}}</h2>
           <div class="text-gray-400 h-20">
-            ${newsDetail.content}
+            {{__content__}}
           </div>
   
           {{__comments__}}
@@ -239,8 +302,8 @@ class NewsDetailView extends View {
 
   render() {
     const id = location.hash.substr(7);
-    const api = new NewsDetailApi();
-    const newsDetail: NewsDetail = api.getData(CONTENT_URL.replace('@id', id));
+    const api = new NewsDetailApi(CONTENT_URL.replace('@id', id));
+    const newsDetail: NewsDetail = api.getData();
 
     for(let i=0; i < store.feeds.length; i++) {
       if (store.feeds[i].id === Number(id)) {
@@ -250,6 +313,9 @@ class NewsDetailView extends View {
     }
   
     this.setTemplateData('comments', this.makeComment(newsDetail.comments));
+    this.setTemplateData('currentPage', String(store.currentPage));
+    this.setTemplateData('title', String(newsDetail.title));
+    this.setTemplateData('content', String(newsDetail.content));
   }
 
   makeComment(comments: NewsComment[]): string {
@@ -276,23 +342,13 @@ class NewsDetailView extends View {
   }
 }
 
+const router: Router = new Router();
+const newsFeedView = new NewsFeedView('root');
+const newsDetailView = new NewsDetailView('root');
 
+router.setDefaultPage(newsFeedView);
+router.addRoutePath('/page/', newsFeedView);
+router.addRoutePath('/show/', newsDetailView);
 
-
-
-function router(): void {
-  const routePath = location.hash;
-
-  if (routePath === '') {
-    newsFeed();
-  } else if (routePath.indexOf('#/page/') >= 0) {
-    store.currentPage = Number(routePath.substr(7));
-    newsFeed();
-  } else {
-    newsDetail()
-  }
-}
-
-window.addEventListener('hashchange', router);
-
-router();
+// 최초 진입시에는 hashchange가 발생하지 않기 때문에 인위적으로 호출!
+router.route();
