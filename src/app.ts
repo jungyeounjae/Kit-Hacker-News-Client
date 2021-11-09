@@ -7,6 +7,14 @@ const store: Store = {
   feeds: [],
 };
 
+declare global {
+  interface Window {
+    store: Store;
+  }
+}
+
+window.store = store;
+
 const router: Router = new Router();
 const newsFeedView = new NewsFeedView('root');
 const newsDetailView = new NewsDetailView('root');

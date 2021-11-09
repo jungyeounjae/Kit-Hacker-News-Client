@@ -1,4 +1,4 @@
-import {NewsFeed, NewsDetail} from '../types/';
+import { NewsFeed, NewsDetail} from '../types/';
 
 /**
  * targetClassがbaseClassesクラウをextendsする。(Minin)
