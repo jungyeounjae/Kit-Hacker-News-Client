@@ -8,7 +8,7 @@
 {
     "compilerOptions": {
       "strict": true,　// typescript → javascriptに変更するにあったって、厳しく見るのか？
-      "target": "ES5",
+      "target": "ES6",
       "module": "CommonJS",
       "alwaysStrict": true,
       "noImplicitAny": true,
