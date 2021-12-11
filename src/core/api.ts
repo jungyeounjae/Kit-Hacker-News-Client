@@ -27,24 +27,30 @@ export class Api {
       this.url = url;
     }
   
-    getRequest<AjaxResponse>(): AjaxResponse {
+    /**
+     * 
+     * @param callback callback関数をパラメータとして受け取って、returnとして返す
+     */
+    getRequest<AjaxResponse>(callback: (data: AjaxResponse) => void): void {
       const ajax = new XMLHttpRequest();
-      ajax.open('GET', this.url, false);
+      // 同期コード
+      ajax.open('GET', this.url);
+      this.ajax.addEventListener('load', () => {
+        callback(JSON.parse(this.ajax.response) as AjaxResponse);
+      });
       ajax.send();
-  
-      return JSON.parse(ajax.response) as AjaxResponse;
     }
   }
   
 export class NewsFeedApi extends Api {
-    getData(): NewsFeed[] {
-      return this.getRequest<NewsFeed[]>();
+    getData(callback: (data: NewsFeed[]) => void): void {
+      return this.getRequest<NewsFeed[]>(callback);
     }
-  }
+}
 
 export class NewsDetailApi extends Api {
-    getData(): NewsDetail {
-      return this.getRequest<NewsDetail>();
-    }
+  getData(callback: (data: NewsDetail) => void): void {
+    return this.getRequest<NewsDetail>(callback);
   }
+}
   

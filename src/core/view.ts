@@ -41,5 +41,5 @@ export default abstract class View {
     }
   
     // render 메서드 작성을 자식 클래스에게 강제시킨다.
-    abstract render(): void;
+    abstract render(...params: string[]): void;
   }

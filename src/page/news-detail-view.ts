@@ -1,13 +1,9 @@
 import View from '../core/view';
 import { NewsDetailApi } from '../core/api';
-import { NewsDetail, NewsComment, NewsStore } from '../types';
+import { NewsComment, NewsStore, NewsDetail} from '../types';
 import { CONTENT_URL } from '../config';
 
-export default class NewsDetailView extends View {
-    private store: NewsStore;
-
-    constructor(containerId: string, store: NewsStore) {
-      let template = `
+const template = `
         <div class="bg-gray-600 min-h-screen pb-8">
           <div class="bg-white text-xl">
             <div class="mx-auto px-4">
@@ -35,23 +31,33 @@ export default class NewsDetailView extends View {
           </div>
         </div>
       `;
+
+export default class NewsDetailView extends View {
+    private store: NewsStore;
+
+    
+    constructor(containerId: string, store: NewsStore) {
       super(containerId, template);
       this.store = store;
     }
   
-    render() {
-      const id = location.hash.substr(7);
+    render = (id: string): void => {
       const api = new NewsDetailApi(CONTENT_URL.replace('@id', id));
-      const newsDetail: NewsDetail = api.getData();
+      api.getData((data: NewsDetail) => {
+        const { title, content, comments } = data;
     
-      this.store.makeRead(Number(id));
-      this.setTemplateData('comments', this.makeComment(newsDetail.comments));
-      this.setTemplateData('currentPage', String(this.store.currentPage));
-      this.setTemplateData('title', String(newsDetail.title));
-      this.setTemplateData('content', String(newsDetail.content));
+        this.store.makeRead(Number(id));
+        this.setTemplateData('comments', this.makeComment(comments));
+        this.setTemplateData('currentPage', this.store.currentPage.toString());
+        this.setTemplateData('title', title);
+        this.setTemplateData('content', content);
+  
+        this.updateView();
+      })
+
     }
   
-    makeComment(comments: NewsComment[]): string {
+    private makeComment(comments: NewsComment[]): string {
     
       for(let i = 0; i < comments.length; i++) {
         const comment: NewsComment = comments[i];

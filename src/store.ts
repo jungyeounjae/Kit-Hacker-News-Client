@@ -59,3 +59,16 @@ export default class Store implements NewsStore{
         }
     }
 }
+
+class test {
+    private s1 = new Store();
+    private v = 1;
+
+    constructor() {
+        // setter
+        this.s1.currentPage = 1;
+        //getter
+        this.v = this.s1.nextPage;
+    }
+
+}
