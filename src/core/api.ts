@@ -19,38 +19,69 @@ import { NewsFeed, NewsDetail} from '../types/';
 // }
 
 export class Api {
-    ajax: XMLHttpRequest;
+    xhr: XMLHttpRequest;
     url: string;
   
     constructor(url: string) {
-      this.ajax = new XMLHttpRequest();
+      this.xhr = new XMLHttpRequest();
       this.url = url;
     }
   
     /**
-     * 
+     * XHRequest
      * @param callback callback関数をパラメータとして受け取って、returnとして返す
      */
-    getRequest<AjaxResponse>(callback: (data: AjaxResponse) => void): void {
-      const ajax = new XMLHttpRequest();
+    getRequestWithXHR<AjaxResponse>(callback: (data: AjaxResponse) => void): void {
       // 同期コード
-      ajax.open('GET', this.url);
-      this.ajax.addEventListener('load', () => {
-        callback(JSON.parse(this.ajax.response) as AjaxResponse);
+      this.xhr.open('GET', this.url);
+      this.xhr.addEventListener('load', () => {
+        callback(JSON.parse(this.xhr.response) as AjaxResponse);
       });
-      ajax.send();
+      this.xhr.send();
+    }
+
+    /**
+     * fetch api 
+     * @param callback callback関数をパラメータとして受け取って、returnとして返す
+     */
+     getRequestWithPromise<AjaxResponse>(callback: (data: AjaxResponse) => void): void {
+      // fecth(A,B)  A - URL, B - options(default : GET method)
+      // return promoise object - resolve
+      // catch - reject
+      fetch(this.url)
+        .then(response => response.json())
+        .then(callback)
+        .catch(() => {
+          console.log(" no data ");
+        })
     }
   }
   
 export class NewsFeedApi extends Api {
-    getData(callback: (data: NewsFeed[]) => void): void {
-      return this.getRequest<NewsFeed[]>(callback);
-    }
+  constructor(url: string) {
+    super(url);
+  }
+
+  getDataWithXhr(callback: (data: NewsFeed[]) => void): void {
+    return this.getRequestWithXHR<NewsFeed[]>(callback);
+  }
+
+  getDataWithPromise(callback: (data: NewsFeed[]) => void): void {
+    return this.getRequestWithPromise<NewsFeed[]>(callback);
+  }
 }
 
 export class NewsDetailApi extends Api {
-  getData(callback: (data: NewsDetail) => void): void {
-    return this.getRequest<NewsDetail>(callback);
+  constructor(url: string) {
+    super(url);
+  }
+
+  getDataWithXhr(callback: (data: NewsDetail) => void): void {
+    return this.getRequestWithXHR<NewsDetail>(callback);
+  }
+
+  getDataWithPromise(callback: (data: NewsDetail) => void): void {
+    return this.getRequestWithPromise<NewsDetail>(callback);
   }
 }
   

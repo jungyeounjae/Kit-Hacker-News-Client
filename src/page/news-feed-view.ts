@@ -32,15 +32,11 @@ export default class NewsFeedView extends View {
     private api: NewsFeedApi;
     private store: NewsStore;
     
-
     constructor(containerId: string, store: NewsStore) {
-
-  
       super(containerId, template);
   
       this.store = store;
       this.api = new NewsFeedApi(NEWS_URL);
-    
 
     }
    
@@ -48,12 +44,11 @@ export default class NewsFeedView extends View {
       this.store.currentPage = Number(location.hash.substr(7) || 1); // null의 경우, 1
 
       if (!this.store.hasFeeds) {
-        this.api.getData((feeds: NewsFeed[]) => {
+        this.api.getDataWithPromise((feeds: NewsFeed[]) => {
           this.store.setFeeds(feeds);
           this.renderView();
         })
       }
-    
       this.renderView();
     }
 
