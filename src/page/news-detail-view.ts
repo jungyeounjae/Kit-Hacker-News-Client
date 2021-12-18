@@ -35,13 +35,13 @@ const template = `
 export default class NewsDetailView extends View {
     private store: NewsStore;
 
-    
     constructor(containerId: string, store: NewsStore) {
       super(containerId, template);
       this.store = store;
     }
   
     render = (id: string): void => {
+      this.store.currentPage = Number(location.hash.substr(7) || 1); 
       const api = new NewsDetailApi(CONTENT_URL.replace('@id', id));
       api.getDataWithPromise((data: NewsDetail) => {
         const { title, content, comments } = data;
@@ -57,7 +57,6 @@ export default class NewsDetailView extends View {
     }
   
     private makeComment(comments: NewsComment[]): string {
-    
       for(let i = 0; i < comments.length; i++) {
         const comment: NewsComment = comments[i];
     
@@ -75,7 +74,6 @@ export default class NewsDetailView extends View {
           this.addHtml(this.makeComment(comment.comments));
         }
       }
-    
       return this.getHtml();
     }
   }

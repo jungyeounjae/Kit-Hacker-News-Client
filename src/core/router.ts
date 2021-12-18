@@ -16,28 +16,41 @@ export default class Router {
       this.defaultRoute = null;
     }
   
-    setDefaultPage(page: View): void {
-      this.defaultRoute = { path: '', page};
+    setDefaultPage(page: View, params: RegExp | null = null): void {
+      this.defaultRoute = {
+        path: '', 
+        page, 
+        params,
+      };
     }
   
-    addRoutePath(path: string,page: View): void {
+    addRoutePath(path: string, page: View, params: RegExp | null = null): void {
       // key와 value가 같은 경우에는 생략이 가능하다
       // push({path: path, page: page})  // 생략 전
-      this.routeTable.push({path,page})
+      this.routeTable.push({ path, page, params });
     }
   
     route() {
-      const routePath = location.hash;
-  
+      const routePath: string = location.hash;
+      
       if (routePath === '' && this.defaultRoute) {
         this.defaultRoute.page.render();
+        return;
       }
   
-      for (const routeInfo of this.routeTable) {
-        if (routePath.indexOf(routeInfo.path) >= 0) {
-          routeInfo.page.render();
-          break;
-        }
+      for(const routeInfo of this.routeTable) {
+        if (routePath.indexOf(routeInfo.path) >= 0) {        
+          if (routeInfo.params) {
+            const parseParams = routePath.match(routeInfo.params);
+  
+            if (parseParams) {
+              routeInfo.page.render.apply(null, [parseParams[1]]);
+            }          
+          } else {
+            routeInfo.page.render();
+          }       
+          return;
+        }  
       }
     }
   }
