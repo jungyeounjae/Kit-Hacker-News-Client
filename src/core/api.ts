@@ -26,7 +26,17 @@ export class Api {
       this.xhr = new XMLHttpRequest();
       this.url = url;
     }
-  
+
+    /**
+     * async awitを使ってコールバックのない非同期関数を作成
+     * awaitを使う為には、その関数も非同期である必要があり、関数にasyncを宣言する。
+     * @param callback async関数はpromiseをreturnする
+     */
+     async request<AjaxResponse>(): Promise<AjaxResponse> {
+      const response = await fetch(this.url);
+      return await response.json() as AjaxResponse;
+    }
+
     /**
      * XHRequest
      * @param callback callback関数をパラメータとして受け取って、returnとして返す
@@ -62,6 +72,15 @@ export class NewsFeedApi extends Api {
     super(url);
   }
 
+  /**
+   * 非同期関数を呼び出す側も非同期であるべき
+   * @param callback 
+   * @returns 
+   */
+  async getData(): Promise<NewsFeed[]> {
+    return this.request<NewsFeed[]>();
+  }
+
   getDataWithXhr(callback: (data: NewsFeed[]) => void): void {
     return this.getRequestWithXHR<NewsFeed[]>(callback);
   }
@@ -74,6 +93,15 @@ export class NewsFeedApi extends Api {
 export class NewsDetailApi extends Api {
   constructor(url: string) {
     super(url);
+  }
+
+  /**
+   * 非同期関数を呼び出す側も非同期であるべき
+   * @param callback 
+   * @returns 
+   */
+  async getData(): Promise<NewsDetail[]> {
+    return this.request<NewsDetail[]>();
   }
 
   getDataWithXhr(callback: (data: NewsDetail) => void): void {

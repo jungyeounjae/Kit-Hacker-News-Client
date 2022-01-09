@@ -1,5 +1,5 @@
 import View from '../core/view';
-import { NewsDetailApi } from '../core/api';
+import { Api, NewsDetailApi } from '../core/api';
 import { NewsComment, NewsStore, NewsDetail} from '../types';
 import { CONTENT_URL } from '../config';
 
@@ -39,20 +39,28 @@ export default class NewsDetailView extends View {
       super(containerId, template);
       this.store = store;
     }
-  
-    render = (id: string): void => {
+
+    // returnがvoidでもpromiseをreturnする必要がある。
+    render = async (id: string): Promise<void> => {
       const api = new NewsDetailApi(CONTENT_URL.replace('@id', id));
-      api.getDataWithPromise((data: NewsDetail) => {
-        const { title, content, comments } = data;
-    
-        this.store.makeRead(Number(id));
-        this.setTemplateData('comments', this.makeComment(comments));
-        this.setTemplateData('currentPage', this.store.currentPage.toString());
-        this.setTemplateData('title', title);
-        this.setTemplateData('content', content);
+
+      const { title, content, comments } = await api.getData();
+
+      this.store.makeRead(Number(id));
+      this.setTemplateData('comments', this.makeComment(comments));
+      this.setTemplateData('currentPage', this.store.currentPage.toString());
+      this.setTemplateData('title', title);
+      this.setTemplateData('content', content);
   
-        this.updateView();
-      })
+      this.updateView();
+      // api.getDataWithPromise((data: NewsDetail) => {
+      //   this.store.makeRead(Number(id));
+      //   this.setTemplateData('comments', this.makeComment(comments));
+      //   this.setTemplateData('currentPage', this.store.currentPage.toString());
+      //   this.setTemplateData('title', title);
+      //   this.setTemplateData('content', content);
+      //   this.updateView();
+      // })
     }
   
     private makeComment(comments: NewsComment[]): string {
