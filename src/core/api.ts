@@ -49,7 +49,7 @@ export class Api {
       // return promoise object - resolve
       // catch - reject
       fetch(this.url)
-        .then(response => response.json())
+        .then(response => response.json()) // 응답을 json으로 파싱(비동기적으로)
         .then(callback)
         .catch(() => {
           console.log(" no data ");

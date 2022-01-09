@@ -41,7 +41,6 @@ export default class NewsDetailView extends View {
     }
   
     render = (id: string): void => {
-      this.store.currentPage = Number(location.hash.substr(7) || 1); 
       const api = new NewsDetailApi(CONTENT_URL.replace('@id', id));
       api.getDataWithPromise((data: NewsDetail) => {
         const { title, content, comments } = data;

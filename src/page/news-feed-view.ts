@@ -39,9 +39,9 @@ export default class NewsFeedView extends View {
       this.api = new NewsFeedApi(NEWS_URL);
     }
    
-    render(): void {
-      this.store.currentPage = Number(location.hash.substr(7) || 1); // null의 경우, 1
-
+    render = (page : string = "1") : void => {
+      this.store.currentPage = Number(page);
+      
       if (!this.store.hasFeeds) {
         this.api.getDataWithPromise((feeds: NewsFeed[]) => {
           this.store.setFeeds(feeds);
